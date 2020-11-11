@@ -3,7 +3,7 @@
 """
 Spyder Editor
 
-Restructered on Wed 16 Oct 2019 17:15
+Restructered on Wed 10 Nov 2020 14:15
 
 @author: Laurens Stoop - l.p.stoop@uu.nl
 """
@@ -17,46 +17,47 @@ Restructered on Wed 16 Oct 2019 17:15
 
 # Importing modules
 import xarray as xr
-#import regionmask as rm
-#import matplotlib.pyplot as plt
 import numpy as np
 import datetime
-#import cartopy.crs as ccrs
-#import geopandas as gp
 
-
-
-# Run fist 
-# cdo sellonlatbox,0,10,49,55 ERA5-EU_ssrd_2011.nc ERA5-NL_ssrd_2011.nc
 
 # Select the years to run
 years = np.array([
-#            '1979','1980','1981',
-#            '1982','1983','1984',
-#            '1985','1986','1987',
-#            '1988','1989','1990',
-#            '1991','1992','1993',
-#            '1994','1995','1996',
-#            '1997','1998','1999',
-#            '2000','2001',
-            '2002',
-            '2003','2004','2005',
-            '2006','2007','2008',
-            '2009','2010','2011',
-            '2012','2013','2014',
-            '2015','2016','2017',
-            '2018'
-#            '2016'
+            '1950', '1951', '1952',
+            '1953', '1954', '1955',
+            '1956', '1957', '1958',
+            '1959', '1960', '1961',
+            '1962', '1963', '1964',
+            '1965', '1966', '1967',
+            '1968', '1969', '1970',
+            '1971', '1972', '1973',
+            '1974', '1975', '1976',
+            '1977', '1978'
+            # '1979','1980','1981',
+            # '1982','1983','1984',
+            # '1985','1986','1987',
+            # '1988','1989','1990',
+            # '1991','1992','1993',
+            # '1994','1995','1996',
+            # '1997','1998','1999',
+            # '2000','2001','2002',
+            # '2003','2004','2005',
+            # '2006','2007','2008',
+            # '2009','2010','2011',
+            # '2012','2013','2014',
+            # '2015','2016','2017',
+            # '2018','2019'
+            # '2016'
             
         ])
 
 
 # File locations
-file_path = '/media/DataDrive/ERA5-EU_BASE/'
-out_path = '/media/DataGate2/Erik/'
+# file_path = '/media/DataDrive/ERA5-EU_BASE/'
+file_path = '/media/DataDrive/ERA5BE-EU_BASE/'
+out_path = '/media/DataGate3/ERA5-EU_CF/'
 #file_path = '/home/stoop/Documents/Data/ERA5/'
-#era_path = file_path+'netherlands/'
-era_path = file_path+''
+
 
 
 # Max CF for the RES
@@ -70,8 +71,8 @@ print('NOTIFY: Basic setup done, defining functions')
 # Function definitions
 # =============================================================================
 
-# Function to determine the solar capacity factor
-def solar_potential(ds):
+# Function to determine the solar capacity factor as from Jerez 2015
+def solar_potential_jerez2015(ds):
     
     # The constant definitions
     c = np.array([4.3, 0.943, 0.028, -1.528]) # Cell temperature constants in [degree C, unitless, degree C * m**2 /W, degree C *s/m
@@ -94,7 +95,39 @@ def solar_potential(ds):
     return ds_temp.solarCF
 
 
-# Function to determine the windpotential
+# Function to determine the solar capacity factor as from bett & thornton 2016
+def solar_potential_bett2016(ds):
+    
+    # The constant definitions
+    ALPHA = 4.20 * 10**(-3) # K**-1
+    BETA = -4.60 * 10**(-3) # K**-1
+    C1 = 0.033 # [no unit]
+    C2 = -0.092 # [no unit]
+    GSTC = 1000 # W m**-2
+    TSTC = 25 # degree C
+    T0 = 20 # degree C
+    G0 = 800 # W m**-2
+    TNOCT = 48 # degree C
+        
+    # Zeorth step: Make a dataset
+    ds_temp = xr.Dataset()
+    
+    # first step is to combined calculation of module temperature and taking the difference between that and the STC conditions   
+    ds_temp['DTmod'] = ds.t2m + (TNOCT - T0)*ds.ssrd/G0 - TSTC
+    
+    # In the second step the Reletive efficiency is calculated basedon an empirical law, where the derive irradience in taken into account
+    ds_temp['Nrel'] = (1 + ALPHA * ds_temp.DTmod) * (1 + C1*np.log(ds.ssrd/GSTC) + C2*np.log(ds.ssrd/GSTC)**2 + BETA*ds_temp.DTmod)
+      
+    # In the final step the capacity factor is calculated based on the reletive efficiency and the STC irradience conditions
+    ds_temp['solarCF'] = ds_temp.Nrel * ds.ssrd / GSTC
+    
+    # the use of the logarithm gives rise to NaN values which should be zero, therefore all nan values are set to zero
+    ds_temp = ds_temp.fillna(0)
+    
+    return ds_temp.solarCF
+
+
+# Function to determine the windpotential (this is adjusted based on expert judgement)
 def wind_potential(wspd, height, alpha, cut_in_wspd, cut_out_start, cut_out_end, rated_wspd, maxCF):
     
     # First we create a new dataset
@@ -133,10 +166,10 @@ for year in years:
 
     
     # Files to load
-    ssrd = era_path+'ERA5-EU_ssrd_'+str(year)+'.nc'
-    t2m = era_path+'ERA5-EU_t2m_'+str(year)+'.nc'
-    wspd = era_path+'ERA5-EU_wspd_'+str(year)+'.nc'
-    wspd100m = era_path+'ERA5-EU_wspd100m_'+str(year)+'.nc'
+    ssrd = file_path+'ERA5-EU_ssrd_'+str(year)+'.nc'
+    t2m = file_path+'ERA5-EU_t2m_'+str(year)+'.nc'
+    # wspd = file_path+'ERA5-EU_wspd_'+str(year)+'.nc'
+    wspd100m = file_path+'ERA5-EU_wspd100m_'+str(year)+'.nc'
     
     print('Working on '+str(year)+': Started to load the files')
     #%%
@@ -150,7 +183,7 @@ for year in years:
     # Open the netCDF file of the data to cut. Units are checked!
     ds['ssrd'] = xr.open_dataset(ssrd).ssrd # in W/m**2 per timestep (= 1 hour)
     ds['t2m'] = xr.open_dataset(t2m).t2m # in degree C
-    ds['wspd'] = xr.open_dataset(wspd).wspd # in m/s
+    # ds['wspd'] = xr.open_dataset(wspd).wspd # in m/s
     ds['wspd100m'] = xr.open_dataset(wspd100m).wspd100m # in m/s
     
 
@@ -161,8 +194,14 @@ for year in years:
     # Doing the calculations for capacity factors
     # =============================================================================
     
-    # Solar capacity factor calculation
-    ds['solarCF'] = solar_potential(ds)
+    # Solar capacity factor calculation Jerez method
+    # ds['solarCF_jerez'] = solar_potential_jerez2015(ds)
+    
+    # Solar capacity factor calculation Bett method
+    ds['solarCF'] = solar_potential_bett2016(ds)
+    
+    #diff in cf
+    # ds['solar_diff'] = ds.solarCF_jerez - ds.solarCF_bett
     
     # Wind capacity factor calculation for offshore
     ds['windCF_off'] = wind_potential(ds.wspd100m, height=122.0, alpha=0.11, cut_in_wspd=3.0, cut_out_start=20.0, cut_out_end=25.0, rated_wspd=11.0, maxCF=maxCF_off)
@@ -183,12 +222,20 @@ for year in years:
             data_source = 'ERA5 reanalysis data, contains modified Copernicus Climate Change Service information [08-03-2019]'
             )
     
+    # # Set the demand attributes
+    # ds.solarCF.attrs.update(
+    #         units = ' ',
+    #         short_name = 'solarCF',
+    #         long_name = 'Capacity factor for photovoltaics',
+    #         method = 'Adopted by L.P. Stoop, based on Jerez et al., 2015', 
+    #         description = 'Hourly capacity factor of solar panels')
+    
     # Set the demand attributes
     ds.solarCF.attrs.update(
             units = ' ',
             short_name = 'solarCF',
             long_name = 'Capacity factor for photovoltaics',
-            method = 'Adopted by L.P. Stoop, based on Jerez et al., 2015', 
+            method = 'Adopted by L.P. Stoop, based on Bett and Thornton, 2016', 
             description = 'Hourly capacity factor of solar panels')
 
     # Set the demand attributes
@@ -214,10 +261,10 @@ for year in years:
     # =============================================================================
     
     # Removing unneeded variables
-    ds = ds.drop(['wspd', 'ssrd', 'wspd100m'])
+    ds = ds.drop(['t2m', 'ssrd', 'wspd100m']) # 'wspd'
     
     # Saving the file
-    ds.to_netcdf(out_path+'ERA5-EU_Erik-CF_'+str(year)+'.nc')
+    ds.to_netcdf(out_path+'ERA5-EU_CF_'+str(year)+'.nc', encoding={'time':{'units':'days since 1900-01-01'}})
     
     # Closing files
     ds.close()
