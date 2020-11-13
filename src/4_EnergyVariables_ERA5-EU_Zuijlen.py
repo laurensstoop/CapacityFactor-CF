@@ -44,7 +44,7 @@ years = np.array([
             '1968', '1969', '1970',
             '1971', '1972', '1973',
             '1974', '1975', '1976',
-            '1977', '1978'
+            '1977', '1978',
             '1979', '1980', '1981',
             '1982', '1983', '1984',
             '1985', '1986', '1987',
@@ -111,13 +111,13 @@ for year in years:
                 with xr.Dataset() as ds2:
                 
                     
-                    print('action (0/2): Apply the distributions')                        
+                    print('------ action (0/2): Apply the distributions')                        
                     # Now apply the distributions            
                     ds2['SPV'] = ds.solarCF * ds_distribution.solarPV
                     ds2['WON'] = ds.windCF_on * ds_distribution.onWind
                     ds2['WOF'] = ds.windCF_off * ds_distribution.offWind
                     
-                    print('action (1/2): Force load the new file to do the calculations')
+                    print('------ action (1/2): Force load the new file to do the calculations')
                     # Force load the file
                     ds2.load()
 
@@ -154,7 +154,7 @@ for year in years:
                     ds2['WOF'] = ds2.WOF.astype('float32')
                     
     
-                    print('action (2/2): Save the file')
+                    print('------ action (2/2): Save the file')
                     # Now save the file
                     #compression = 'zlib' # zlib is very smoll data
                     ds2.to_netcdf(file_save, format='NETCDF4', engine='netcdf4') # ,encoding={'SPV':{compression:True},'WON':{compression:True},'WOF':{compression:True}})

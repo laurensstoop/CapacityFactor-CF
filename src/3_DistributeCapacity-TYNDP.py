@@ -3,7 +3,7 @@
 """
 Spyder Editor
 
-Restructered on Wed 10 Nov 2020 14:15
+Restructered on Tue 10 Nov 2020 14:15
 
 @author: Laurens Stoop - l.p.stoop@uu.nl
 """
@@ -19,7 +19,7 @@ Restructered on Wed 10 Nov 2020 14:15
 import xarray as xr
 import numpy as np
 import datetime
-
+import pandas as pd
 
 
 # File locations

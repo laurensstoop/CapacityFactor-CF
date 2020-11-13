@@ -32,22 +32,22 @@ years = np.array([
             '1968', '1969', '1970',
             '1971', '1972', '1973',
             '1974', '1975', '1976',
-            '1977', '1978'
-            # '1979','1980','1981',
-            # '1982','1983','1984',
-            # '1985','1986','1987',
-            # '1988','1989','1990',
-            # '1991','1992','1993',
-            # '1994','1995','1996',
-            # '1997','1998','1999',
-            # '2000','2001','2002',
-            # '2003','2004','2005',
-            # '2006','2007','2008',
-            # '2009','2010','2011',
-            # '2012','2013','2014',
-            # '2015','2016','2017',
-            # '2018','2019'
-            # '2016'
+            '1977', '1978',
+            # '1979', '1980', '1981',
+            # '1982', '1983', '1984',
+            # '1985', '1986', '1987',
+            # '1988', '1989', '1990',
+            # '1991', '1992', '1993',
+            # '1994', '1995', '1996',
+            # '1997', '1998', '1999',
+            # '2000', '2001', '2002',
+            # '2003', '2004', '2005',
+            # '2006', '2007', '2008',
+            # '2009', '2010', '2011',
+            # '2012', '2013', '2014',
+            # '2015', '2016', '2017',
+            # '2018', '2019'
+            # # '2016'
             
         ])
 
@@ -92,6 +92,9 @@ def solar_potential_jerez2015(ds):
     # The solar energy capcaity factor
     ds_temp['solarCF'] = ds_temp.solarPR*ds.ssrd/istd
     
+    # Force zero as minimal value
+    ds_temp['solarCF'] = ds_temp.solarCF.where(ds_temp.solarCF >= 0, 0)
+    
     return ds_temp.solarCF
 
 
@@ -123,6 +126,9 @@ def solar_potential_bett2016(ds):
     
     # the use of the logarithm gives rise to NaN values which should be zero, therefore all nan values are set to zero
     ds_temp = ds_temp.fillna(0)
+    
+    # Force zero as minimal value
+    ds_temp['solarCF'] = ds_temp.solarCF.where(ds_temp.solarCF >= 0, 0)
     
     return ds_temp.solarCF
 
@@ -204,10 +210,10 @@ for year in years:
     # ds['solar_diff'] = ds.solarCF_jerez - ds.solarCF_bett
     
     # Wind capacity factor calculation for offshore
-    ds['windCF_off'] = wind_potential(ds.wspd100m, height=122.0, alpha=0.11, cut_in_wspd=3.0, cut_out_start=20.0, cut_out_end=25.0, rated_wspd=11.0, maxCF=maxCF_off)
+    ds['windCF_off'] = wind_potential(ds.wspd100m, height=150.0, alpha=0.11, cut_in_wspd=3.0, cut_out_start=20.0, cut_out_end=25.0, rated_wspd=11.0, maxCF=maxCF_off)
     
     # Wind capacity factor calculation for onshore
-    ds['windCF_on'] = wind_potential(ds.wspd100m, height=98.0, alpha=0.143, cut_in_wspd=3.0, cut_out_start=20.0, cut_out_end=25.0, rated_wspd=11.0, maxCF=maxCF_on)
+    ds['windCF_on'] = wind_potential(ds.wspd100m, height=100.0, alpha=0.143, cut_in_wspd=3.0, cut_out_start=20.0, cut_out_end=25.0, rated_wspd=11.0, maxCF=maxCF_on)
  
     # =============================================================================
     # Setting the attributes    
@@ -235,14 +241,14 @@ for year in years:
             units = ' ',
             short_name = 'solarCF',
             long_name = 'Capacity factor for photovoltaics',
-            method = 'Adopted by L.P. Stoop, based on Bett and Thornton, 2016', 
+            method = 'Modified by L.P. Stoop, based on Bett and Thornton, 2016', 
             description = 'Hourly capacity factor of solar panels')
 
     # Set the demand attributes
     ds.windCF_on.attrs.update(
             units = ' ',
             short_name = 'windCF_on',
-            long_name = 'Capacity factor for wind onshore with hubheigh 98 meter',
+            long_name = 'Capacity factor for wind onshore with hubheigh 100 meter',
             method = 'Adopted by L.P. Stoop, based on Jerez et al., 2015', 
             description = 'Hourly capacity factor of onshore wind turbines')
     
@@ -250,7 +256,7 @@ for year in years:
     ds.windCF_off.attrs.update(
             units = ' ',
             short_name = 'windCF_off',
-            long_name = 'Capacity factor for wind offshore with hubheigh 122 meter',
+            long_name = 'Capacity factor for wind offshore with hubheigh 150 meter',
             method = 'Adopted by L.P. Stoop, based on Jerez et al., 2015', 
             description = 'Hourly capacity factor of offshore wind turbines')
     
