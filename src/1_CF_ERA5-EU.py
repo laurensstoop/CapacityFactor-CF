@@ -19,6 +19,7 @@ Restructered on Wed 10 Nov 2020 14:15
 import xarray as xr
 import numpy as np
 import datetime
+import os.path
 
 
 # Select the years to run
@@ -168,109 +169,127 @@ print('NOTIFY: Starting the mega loop')
 # The mega loop
 for year in years:
 
-    print('NOTIFY: Working on '+str(year))
-
+    # Define the file name
+    file_save = out_path+'ERA5-EU_CF_'+str(year)+'.nc'
     
-    # Files to load
-    ssrd = file_path+'ERA5-EU_ssrd_'+str(year)+'.nc'
-    t2m = file_path+'ERA5-EU_t2m_'+str(year)+'.nc'
-    # wspd = file_path+'ERA5-EU_wspd_'+str(year)+'.nc'
-    wspd100m = file_path+'ERA5-EU_wspd100m_'+str(year)+'.nc'
     
-    print('Working on '+str(year)+': Started to load the files')
-    #%%
-    # =============================================================================
-    # Loading in the files
-    # =============================================================================
+    # Check if file allready exist, then get out
+    if os.path.isfile(file_save) == True:
+        
+        # Tell us the file exist
+        print('NOTIFY: Allready applied for year '+year+'!')
+      
+        
+    # IF the file doesn't exist, apply the distribution
+    elif os.path.isfile(file_save) == False:
+        
+        # Tell us the file exist
+        print('NOTIFY: Now starting work on '+year+'!')    
+    
+    
+        print('NOTIFY: Working on '+str(year))
+    
+        
+        # Files to load
+        ssrd = file_path+'ERA5-EU_ssrd_'+str(year)+'.nc'
+        t2m = file_path+'ERA5-EU_t2m_'+str(year)+'.nc'
+        # wspd = file_path+'ERA5-EU_wspd_'+str(year)+'.nc'
+        wspd100m = file_path+'ERA5-EU_wspd100m_'+str(year)+'.nc'
+        
+        print('Working on '+str(year)+': Started to load the files')
+        #%%
+        # =============================================================================
+        # Loading in the files
+        # =============================================================================
+         
+        # Combine the data for easiness
+        ds = xr.Dataset()
+    
+        # Open the netCDF file of the data to cut. Units are checked!
+        ds['ssrd'] = xr.open_dataset(ssrd).ssrd # in W/m**2 per timestep (= 1 hour)
+        ds['t2m'] = xr.open_dataset(t2m).t2m # in degree C
+        # ds['wspd'] = xr.open_dataset(wspd).wspd # in m/s
+        ds['wspd100m'] = xr.open_dataset(wspd100m).wspd100m # in m/s
+        
+    
+        
+        print('Working on '+str(year)+': Loading done, doing the calculations for the CFs')
+        #%%
+        # =============================================================================
+        # Doing the calculations for capacity factors
+        # =============================================================================
+        
+        # Solar capacity factor calculation Jerez method
+        # ds['solarCF_jerez'] = solar_potential_jerez2015(ds)
+        
+        # Solar capacity factor calculation Bett method
+        ds['solarCF'] = solar_potential_bett2016(ds)
+        
+        #diff in cf
+        # ds['solar_diff'] = ds.solarCF_jerez - ds.solarCF_bett
+        
+        # Wind capacity factor calculation for offshore
+        ds['windCF_off'] = wind_potential(ds.wspd100m, height=150.0, alpha=0.11, cut_in_wspd=3.0, cut_out_start=20.0, cut_out_end=25.0, rated_wspd=11.0, maxCF=maxCF_off)
+        
+        # Wind capacity factor calculation for onshore
+        ds['windCF_on'] = wind_potential(ds.wspd100m, height=100.0, alpha=0.143, cut_in_wspd=3.0, cut_out_start=20.0, cut_out_end=25.0, rated_wspd=11.0, maxCF=maxCF_on)
      
-    # Combine the data for easiness
-    ds = xr.Dataset()
-
-    # Open the netCDF file of the data to cut. Units are checked!
-    ds['ssrd'] = xr.open_dataset(ssrd).ssrd # in W/m**2 per timestep (= 1 hour)
-    ds['t2m'] = xr.open_dataset(t2m).t2m # in degree C
-    # ds['wspd'] = xr.open_dataset(wspd).wspd # in m/s
-    ds['wspd100m'] = xr.open_dataset(wspd100m).wspd100m # in m/s
+        # =============================================================================
+        # Setting the attributes    
+        # =============================================================================
+        
+        # Set the global atributes
+        ds.attrs.update(
+                author = 'Laurens Stoop UU/KNMI/TenneT',
+                created = datetime.datetime.today().strftime('%d-%m-%Y'),
+                map_area = 'NL',
+                grid_type = 'gaussian',
+                data_source = 'ERA5 reanalysis data, contains modified Copernicus Climate Change Service information [08-03-2019]'
+                )
+        
+        # # Set the demand attributes
+        # ds.solarCF.attrs.update(
+        #         units = ' ',
+        #         short_name = 'solarCF',
+        #         long_name = 'Capacity factor for photovoltaics',
+        #         method = 'Adopted by L.P. Stoop, based on Jerez et al., 2015', 
+        #         description = 'Hourly capacity factor of solar panels')
+        
+        # Set the demand attributes
+        ds.solarCF.attrs.update(
+                units = ' ',
+                short_name = 'solarCF',
+                long_name = 'Capacity factor for photovoltaics',
+                method = 'Modified by L.P. Stoop, based on Bett and Thornton, 2016', 
+                description = 'Hourly capacity factor of solar panels')
     
-
-    
-    print('Working on '+str(year)+': Loading done, doing the calculations for the CFs')
-    #%%
-    # =============================================================================
-    # Doing the calculations for capacity factors
-    # =============================================================================
-    
-    # Solar capacity factor calculation Jerez method
-    # ds['solarCF_jerez'] = solar_potential_jerez2015(ds)
-    
-    # Solar capacity factor calculation Bett method
-    ds['solarCF'] = solar_potential_bett2016(ds)
-    
-    #diff in cf
-    # ds['solar_diff'] = ds.solarCF_jerez - ds.solarCF_bett
-    
-    # Wind capacity factor calculation for offshore
-    ds['windCF_off'] = wind_potential(ds.wspd100m, height=150.0, alpha=0.11, cut_in_wspd=3.0, cut_out_start=20.0, cut_out_end=25.0, rated_wspd=11.0, maxCF=maxCF_off)
-    
-    # Wind capacity factor calculation for onshore
-    ds['windCF_on'] = wind_potential(ds.wspd100m, height=100.0, alpha=0.143, cut_in_wspd=3.0, cut_out_start=20.0, cut_out_end=25.0, rated_wspd=11.0, maxCF=maxCF_on)
- 
-    # =============================================================================
-    # Setting the attributes    
-    # =============================================================================
-    
-    # Set the global atributes
-    ds.attrs.update(
-            author = 'Laurens Stoop UU/KNMI/TenneT',
-            created = datetime.datetime.today().strftime('%d-%m-%Y'),
-            map_area = 'NL',
-            grid_type = 'gaussian',
-            data_source = 'ERA5 reanalysis data, contains modified Copernicus Climate Change Service information [08-03-2019]'
-            )
-    
-    # # Set the demand attributes
-    # ds.solarCF.attrs.update(
-    #         units = ' ',
-    #         short_name = 'solarCF',
-    #         long_name = 'Capacity factor for photovoltaics',
-    #         method = 'Adopted by L.P. Stoop, based on Jerez et al., 2015', 
-    #         description = 'Hourly capacity factor of solar panels')
-    
-    # Set the demand attributes
-    ds.solarCF.attrs.update(
-            units = ' ',
-            short_name = 'solarCF',
-            long_name = 'Capacity factor for photovoltaics',
-            method = 'Modified by L.P. Stoop, based on Bett and Thornton, 2016', 
-            description = 'Hourly capacity factor of solar panels')
-
-    # Set the demand attributes
-    ds.windCF_on.attrs.update(
-            units = ' ',
-            short_name = 'windCF_on',
-            long_name = 'Capacity factor for wind onshore with hubheigh 100 meter',
-            method = 'Adopted by L.P. Stoop, based on Jerez et al., 2015', 
-            description = 'Hourly capacity factor of onshore wind turbines')
-    
-    # Set the demand attributes
-    ds.windCF_off.attrs.update(
-            units = ' ',
-            short_name = 'windCF_off',
-            long_name = 'Capacity factor for wind offshore with hubheigh 150 meter',
-            method = 'Adopted by L.P. Stoop, based on Jerez et al., 2015', 
-            description = 'Hourly capacity factor of offshore wind turbines')
-    
-    
-    #%%
-    # =============================================================================
-    # Saving the data
-    # =============================================================================
-    
-    # Removing unneeded variables
-    ds = ds.drop(['t2m', 'ssrd', 'wspd100m']) # 'wspd'
-    
-    # Saving the file
-    ds.to_netcdf(out_path+'ERA5-EU_CF_'+str(year)+'.nc', encoding={'time':{'units':'days since 1900-01-01'}})
-    
-    # Closing files
-    ds.close()
+        # Set the demand attributes
+        ds.windCF_on.attrs.update(
+                units = ' ',
+                short_name = 'windCF_on',
+                long_name = 'Capacity factor for wind onshore with hubheigh 100 meter',
+                method = 'Adopted by L.P. Stoop, based on Jerez et al., 2015', 
+                description = 'Hourly capacity factor of onshore wind turbines')
+        
+        # Set the demand attributes
+        ds.windCF_off.attrs.update(
+                units = ' ',
+                short_name = 'windCF_off',
+                long_name = 'Capacity factor for wind offshore with hubheigh 150 meter',
+                method = 'Adopted by L.P. Stoop, based on Jerez et al., 2015', 
+                description = 'Hourly capacity factor of offshore wind turbines')
+        
+        
+        #%%
+        # =============================================================================
+        # Saving the data
+        # =============================================================================
+        
+        # Removing unneeded variables
+        ds = ds.drop(['t2m', 'ssrd', 'wspd100m']) # 'wspd'
+        
+        # Saving the file
+        ds.to_netcdf(file_save, encoding={'time':{'units':'days since 1900-01-01'}})
+        
+        # Closing files
+        ds.close()
