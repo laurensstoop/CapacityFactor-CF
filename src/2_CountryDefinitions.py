@@ -21,6 +21,8 @@ import salem
 path_TYNDP = '/media/DataDrive/Other/CapacityDistribution/TYNDP/'
 path_RegionDefinition = '/media/DataDrive/Other/RegionDefinitions/'
 
+path_CFdata = '/media/DataGate3/ERA5-EU_CF/'
+
 
 print('NOTIFY: Initialization is complete, Skynet active')
 #%%
@@ -41,7 +43,7 @@ shdf_UA = salem.read_shapefile(path_RegionDefinition+'UA_Ukraine_adm0/ukr_admbnd
 
 # The nations for which we want info
 countrylist = np.array([
-        # ['Albania','AL'],
+#         ['Albania','AL'],
 #         ['Austria','AT'],
 #         ['Bosnia & Herzegovina','BA'], 
 #         ['Belgium','BE'],
@@ -67,18 +69,18 @@ countrylist = np.array([
 #         ['Latvia','LV'],  
 #         ['Montenegro', 'ME'],
 #         ['Macedonia', 'MK'],
-#         ['Malta','MT'],
-#         ['Netherlands','NL'],
-#         ['Norway','NO'],
-#         ['Poland','PL'],
-#         ['Portugal','PT'],
-#         ['Romania','RO'],
-#         ['Serbia', 'RS'],
-#         ['Sweden','SE'],
-#         ['Slovenia','SI'],
-#         ['Slovakia','SK'],
-#         ['Turkey','TR'],
-#         ['Ukraine', 'UA'],
+        # ['Malta','MT'],
+        ['Netherlands','NL'], #
+        ['Norway','NO'], #
+        ['Poland','PL'], #
+        ['Portugal','PT'],
+        ['Romania','RO'],
+        ['Serbia', 'RS'],
+        ['Sweden','SE'],
+        ['Slovenia','SI'],
+        ['Slovakia','SK'],
+        ['Turkey','TR'],
+        ['Ukraine', 'UA'],
         ['United Kingdom','UK']
         ])
 
@@ -97,7 +99,7 @@ for country_name, country_code in countrylist:
                
         # Select a country by name and only use this country from the shape file (shdf)
         shape_eez = shdf_eez.loc[shdf_eez['Country'] == country_name]  
-        shape_BA = shdf_BA.loc[shdf_BA['ISO2'] == country_code]  
+        shape_nuts = shdf_BA.loc[shdf_BA['ISO2'] == country_code]  
     
 
     # Filter out the outlier Ukraine           
@@ -126,9 +128,9 @@ for country_name, country_code in countrylist:
         
         
     # Make a quick map to check the selected data, if only one country is selected!
-    if np.size(countrylist) == 2:
-        # ds_eez.random.salem.quick_map();
-        ds_nuts.random.salem.quick_map();
+    # if np.size(countrylist) == 2:
+    #     # ds_eez.random.salem.quick_map();
+    #     ds_nuts.random.salem.quick_map();
         
     
     # Fill all non country values with 0
@@ -139,8 +141,8 @@ for country_name, country_code in countrylist:
     ds_offshore = ds_eez - ds_nuts
     
     # Save the country mask to a file
-    # ds_offshore.to_netcdf(path_TYNDP+'CountryDefinitions_ERA5-EU/CountryDefinitions_ERA5-EU_offshore_'+country_code+'.nc')
-    # ds_nuts.to_netcdf(path_TYNDP+'CountryDefinitions_ERA5-EU/CountryDefinitions_ERA5-EU_onshore_'+country_code+'.nc')
+    ds_offshore.to_netcdf(path_TYNDP+'CountryDefinitions_ERA5-EU/CountryDefinitions_ERA5-EU_offshore_'+country_code+'.nc')
+    ds_nuts.to_netcdf(path_TYNDP+'CountryDefinitions_ERA5-EU/CountryDefinitions_ERA5-EU_onshore_'+country_code+'.nc')
     
 
 
