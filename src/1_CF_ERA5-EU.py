@@ -24,16 +24,16 @@ import os.path
 
 # Select the years to run
 years = np.array([
-            '1950', '1951', '1952',
-            '1953', '1954', '1955',
-            '1956', '1957', '1958',
-            '1959', '1960', '1961',
-            '1962', '1963', '1964',
-            '1965', '1966', '1967',
-            '1968', '1969', '1970',
-            '1971', '1972', '1973',
-            '1974', '1975', '1976',
-            '1977', '1978',
+            # '1950', '1951', '1952',
+            # '1953', '1954', '1955',
+            # '1956', '1957', '1958',
+            # '1959', '1960', '1961',
+            # '1962', '1963', '1964',
+            # '1965', '1966', '1967',
+            # '1968', '1969', '1970',
+            # '1971', '1972', '1973',
+            # '1974', '1975', '1976',
+            # '1977', '1978',
             # '1979', '1980', '1981',
             # '1982', '1983', '1984',
             # '1985', '1986', '1987',
@@ -99,39 +99,39 @@ def solar_potential_jerez2015(ds):
     return ds_temp.solarCF
 
 
-# Function to determine the solar capacity factor as from bett & thornton 2016
-def solar_potential_bett2016(ds):
+# # Function to determine the solar capacity factor as from bett & thornton 2016
+# def solar_potential_bett2016(ds):
     
-    # The constant definitions
-    ALPHA = 4.20 * 10**(-3) # K**-1
-    BETA = -4.60 * 10**(-3) # K**-1
-    C1 = 0.033 # [no unit]
-    C2 = -0.092 # [no unit]
-    GSTC = 1000 # W m**-2
-    TSTC = 25 # degree C
-    T0 = 20 # degree C
-    G0 = 800 # W m**-2
-    TNOCT = 48 # degree C
+#     # The constant definitions
+#     ALPHA = 4.20 * 10**(-3) # K**-1
+#     BETA = -4.60 * 10**(-3) # K**-1
+#     C1 = 0.033 # [no unit]
+#     C2 = -0.092 # [no unit]
+#     GSTC = 1000 # W m**-2
+#     TSTC = 25 # degree C
+#     T0 = 20 # degree C
+#     G0 = 800 # W m**-2
+#     TNOCT = 48 # degree C
         
-    # Zeorth step: Make a dataset
-    ds_temp = xr.Dataset()
+#     # Zeorth step: Make a dataset
+#     ds_temp = xr.Dataset()
     
-    # first step is to combined calculation of module temperature and taking the difference between that and the STC conditions   
-    ds_temp['DTmod'] = ds.t2m + (TNOCT - T0)*ds.ssrd/G0 - TSTC
+#     # first step is to combined calculation of module temperature and taking the difference between that and the STC conditions   
+#     ds_temp['DTmod'] = ds.t2m + (TNOCT - T0)*ds.ssrd/G0 - TSTC
     
-    # In the second step the Reletive efficiency is calculated basedon an empirical law, where the derive irradience in taken into account
-    ds_temp['Nrel'] = (1 + ALPHA * ds_temp.DTmod) * (1 + C1*np.log(ds.ssrd/GSTC) + C2*np.log(ds.ssrd/GSTC)**2 + BETA*ds_temp.DTmod)
+#     # In the second step the Reletive efficiency is calculated basedon an empirical law, where the derive irradience in taken into account
+#     ds_temp['Nrel'] = (1 + ALPHA * ds_temp.DTmod) * (1 + C1*np.log(ds.ssrd/GSTC) + C2*np.log(ds.ssrd/GSTC)**2 + BETA*ds_temp.DTmod)
       
-    # In the final step the capacity factor is calculated based on the reletive efficiency and the STC irradience conditions
-    ds_temp['solarCF'] = ds_temp.Nrel * ds.ssrd / GSTC
+#     # In the final step the capacity factor is calculated based on the reletive efficiency and the STC irradience conditions
+#     ds_temp['solarCF'] = ds_temp.Nrel * ds.ssrd / GSTC
     
-    # the use of the logarithm gives rise to NaN values which should be zero, therefore all nan values are set to zero
-    ds_temp = ds_temp.fillna(0)
+#     # the use of the logarithm gives rise to NaN values which should be zero, therefore all nan values are set to zero
+#     ds_temp = ds_temp.fillna(0)
     
-    # Force zero as minimal value
-    ds_temp['solarCF'] = ds_temp.solarCF.where(ds_temp.solarCF >= 0, 0)
+#     # Force zero as minimal value
+#     ds_temp['solarCF'] = ds_temp.solarCF.where(ds_temp.solarCF >= 0, 0)
     
-    return ds_temp.solarCF
+#     return ds_temp.solarCF
 
 
 # Function to determine the windpotential (this is adjusted based on expert judgement)
@@ -153,7 +153,8 @@ def wind_potential(wspd, height, alpha, cut_in_wspd, cut_out_start, cut_out_end,
     ds_temp['windCF'] = ds_temp.windCF.where(wspd_height >= cut_in_wspd, 0)
     
     # Now we set the wind potential to 0 above the cut-out windspeed
-    ds_temp['windCF'] = ds_temp.windCF.where(wspd_height <= cut_out_start, maxCF*((cut_out_end)**3 - wspd_height**3) / ((cut_out_end)**3 -(cut_out_start)**3))
+    # ds_temp['windCF'] = ds_temp.windCF.where(wspd_height <= cut_out_start, maxCF*((cut_out_end)**3 - wspd_height**3) / ((cut_out_end)**3 -(cut_out_start)**3))
+    ds_temp['windCF'] = ds_temp.windCF.where(wspd_height <= cut_out_start, maxCF*(-1/(cut_out_end-cut_out_start)*wspd_height+1+cut_out_start/(cut_out_end-cut_out_start)))
     ds_temp['windCF'] = ds_temp.windCF.where(wspd_height <= cut_out_end, 0)
     
     return ds_temp.windCF
@@ -193,7 +194,7 @@ for year in years:
         # Files to load
         ssrd = file_path+'ERA5-EU_ssrd_'+str(year)+'.nc'
         t2m = file_path+'ERA5-EU_t2m_'+str(year)+'.nc'
-        # wspd = file_path+'ERA5-EU_wspd_'+str(year)+'.nc'
+        wspd = file_path+'ERA5-EU_wspd_'+str(year)+'.nc'
         wspd100m = file_path+'ERA5-EU_wspd100m_'+str(year)+'.nc'
         
         print('Working on '+str(year)+': Started to load the files')
@@ -208,7 +209,7 @@ for year in years:
         # Open the netCDF file of the data to cut. Units are checked!
         ds['ssrd'] = xr.open_dataset(ssrd).ssrd # in W/m**2 per timestep (= 1 hour)
         ds['t2m'] = xr.open_dataset(t2m).t2m # in degree C
-        # ds['wspd'] = xr.open_dataset(wspd).wspd # in m/s
+        ds['wspd'] = xr.open_dataset(wspd).wspd # in m/s
         ds['wspd100m'] = xr.open_dataset(wspd100m).wspd100m # in m/s
         
     
@@ -220,10 +221,10 @@ for year in years:
         # =============================================================================
         
         # Solar capacity factor calculation Jerez method
-        # ds['solarCF_jerez'] = solar_potential_jerez2015(ds)
+        ds['solarCF'] = solar_potential_jerez2015(ds)
         
         # Solar capacity factor calculation Bett method
-        ds['solarCF'] = solar_potential_bett2016(ds)
+        # ds['solarCF'] = solar_potential_bett2016(ds)
         
         #diff in cf
         # ds['solar_diff'] = ds.solarCF_jerez - ds.solarCF_bett
@@ -260,7 +261,7 @@ for year in years:
                 units = ' ',
                 short_name = 'solarCF',
                 long_name = 'Capacity factor for photovoltaics',
-                method = 'Modified by L.P. Stoop, based on Bett and Thornton, 2016', 
+                method = 'Based on Jerez et al., 2015', 
                 description = 'Hourly capacity factor of solar panels')
     
         # Set the demand attributes
@@ -286,7 +287,7 @@ for year in years:
         # =============================================================================
         
         # Removing unneeded variables
-        ds = ds.drop(['t2m', 'ssrd', 'wspd100m']) # 'wspd'
+        ds = ds.drop(['t2m', 'ssrd', 'wspd100m', 'wspd'])
         
         # Saving the file
         ds.to_netcdf(file_save, encoding={'time':{'units':'days since 1900-01-01'}})

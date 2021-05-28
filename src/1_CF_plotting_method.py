@@ -121,7 +121,8 @@ def wind_potential(wspd, height, alpha, cut_in_wspd, cut_out_start, cut_out_end,
     ds_temp['windCF'] = ds_temp.windCF.where(wspd_height >= cut_in_wspd, 0)
 
     # Now we set the wind potential to 0 above the cut-out windspeed
-    ds_temp['windCF'] = ds_temp.windCF.where(wspd_height <= cut_out_start, maxCF*((cut_out_end-wspd_height)**3)/ ((cut_out_end-cut_out_start))**3)
+    # ds_temp['windCF'] = ds_temp.windCF.where(wspd_height <= cut_out_start, maxCF*((cut_out_end-wspd_height)**3)/ ((cut_out_end-cut_out_start))**3)
+    ds_temp['windCF'] = ds_temp.windCF.where(wspd_height <= cut_out_start, maxCF*(-1/(cut_out_end-cut_out_start)*wspd_height+1+cut_out_start/(cut_out_end-cut_out_start)))
 
     ds_temp['windCF'] = ds_temp.windCF.where(wspd_height <= cut_out_end, 0)
 
@@ -136,6 +137,7 @@ print('NOTIFY: Starting the mega loop')
 
 # fix the wind dataset
 wspd100m = np.arange(0., 30.1, step=0.1)
+wspd = np.arange(0., 30.1, step=0.1)
 
 
 # fix the SSRD dataset
@@ -172,7 +174,7 @@ dsi["ssrd"] = xr.DataArray(
     )
 )
 
-# Set RSDS input
+# Set T2m input
 dsi["t2m"] = xr.DataArray(
     data=t2m_data,
     dims=["temperature", "irradiance"],
@@ -182,12 +184,21 @@ dsi["t2m"] = xr.DataArray(
     )
 )
 
-# Set RSDS input
+# Set wspd100m input
 dsi["wspd100m"] = xr.DataArray(
     data=wspd100m,
     dims=["wind_speed"],
     coords=dict(
         wind_speed=("wind_speed", wspd100m)
+    )
+)
+
+# Set wspd100m input
+dsi["wspd"] = xr.DataArray(
+    data=wspd,
+    dims=["wspeed"],
+    coords=dict(
+        wspeed=("wspeed", wspd)
     )
 )
 
@@ -200,18 +211,18 @@ dsi["wspd100m"] = xr.DataArray(
 ds = xr.Dataset()
 
 # Solar capacity factor calculation Bett method
-ds['SPV'] = solar_potential_bett2016(dsi)
+ds['SPV_bett'] = solar_potential_bett2016(dsi)
 
 #Solar capacity factor calculation Jerez method
-#ds['solarCF_jerez'] = solar_potential_jerez2015(dsi)
+ds['SPV_jerez'] = solar_potential_jerez2015(dsi)
 
 #diff in cf
-# ds['solar_diff'] = ds.solarCF_jerez - ds.solarCF_bett
+ds['solar_diff_0'] = ds.sel(wspeed=0.).SPV_jerez - ds.SPV_bett
 
 
 # Wind capacity factor calculation for onshore
 ds["WON"] = wind_potential(dsi.wspd100m, height=100.0, alpha=0.143, cut_in_wspd=3.0,
-                                  cut_out_start=20.0, cut_out_end=27.0, rated_wspd=11.0, maxCF=maxCF_on)
+                                  cut_out_start=20.0, cut_out_end=25.0, rated_wspd=11.0, maxCF=maxCF_on)
 
 # =============================================================================
 # Plotting
@@ -219,11 +230,30 @@ ds["WON"] = wind_potential(dsi.wspd100m, height=100.0, alpha=0.143, cut_in_wspd=
 
 
 # plot the solarCF
-plt.figure(1)
-ds.SPV.plot()
+# plt.figure(1)
+# ds.sel(irradiance=1000.).SPV_jerez.plot()
+
+# plt.figure(2)
+# ds.SPV_bett.plot()
+
+# plt.figure(3)
+# ds.sel(wspeed=0.).SPV_jerez.plot()
+
+
+# plt.figure(4)
+# ds.sel(wspeed=5.).SPV_jerez.plot()
+
+
+# plt.figure(5)
+# ds.sel(wspeed=20.).SPV_jerez.plot()
+
+
+# plt.figure(9)
+# ds.solar_diff_0.plot()
+
 
 # Plot the windCF
-plt.figure(2)
+plt.figure(10)
 ds.WON.plot()
 
 
