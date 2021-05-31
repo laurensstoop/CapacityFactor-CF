@@ -34,10 +34,11 @@ years = np.array([
             # '1971', '1972', '1973',
             # '1974', '1975', '1976',
             # '1977', '1978',
-            # '1979', '1980', '1981',
-            # '1982', '1983', '1984',
-            # '1985', '1986', '1987',
-            # '1988', '1989', '1990',
+            '1979', '1980', '1981',
+            '1982', '1983', '1984',
+            '1985', '1986', '1987',
+            '1988', '1989', 
+            # '1990',
             # '1991', '1992', '1993',
             # '1994', '1995', '1996',
             # '1997', '1998', '1999',
@@ -47,16 +48,16 @@ years = np.array([
             # '2009', '2010', '2011',
             # '2012', '2013', '2014',
             # '2015', '2016', '2017',
-            # '2018', '2019'
-            # # '2016'
-            
+            # '2018', '2019', '2020'            
         ])
 
 
 # File locations
-# file_path = '/media/DataDrive/ERA5-EU_BASE/'
-file_path = '/media/DataDrive/ERA5BE-EU_BASE/'
-out_path = '/media/DataGate3/ERA5-EU_CF/'
+# file_path = '/media/DataStager1/ERA5-EU_BASE/'
+# file_path = '/media/DataDrive/ERA5BE-EU_BASE/'
+file_path = '/media/DataStager1/ERA5-EU_BASE/'
+# out_path = '/media/DataGate3/ERA5-EU_CF/'
+out_path = '/media/DataStager1/ERA5-EU_CF/'
 #file_path = '/home/stoop/Documents/Data/ERA5/'
 
 
@@ -235,6 +236,8 @@ for year in years:
         # Wind capacity factor calculation for onshore
         ds['windCF_on'] = wind_potential(ds.wspd100m, height=100.0, alpha=0.143, cut_in_wspd=3.0, cut_out_start=20.0, cut_out_end=25.0, rated_wspd=11.0, maxCF=maxCF_on)
      
+        
+        print('Working on '+str(year)+': Adding the correct attributes to the variables')
         # =============================================================================
         # Setting the attributes    
         # =============================================================================
@@ -243,7 +246,7 @@ for year in years:
         ds.attrs.update(
                 author = 'Laurens Stoop UU/KNMI/TenneT',
                 created = datetime.datetime.today().strftime('%d-%m-%Y'),
-                map_area = 'NL',
+                map_area = 'Europe',
                 grid_type = 'gaussian',
                 data_source = 'ERA5 reanalysis data, contains modified Copernicus Climate Change Service information [08-03-2019]'
                 )
@@ -280,7 +283,7 @@ for year in years:
                 method = 'Adopted by L.P. Stoop, based on Jerez et al., 2015', 
                 description = 'Hourly capacity factor of offshore wind turbines')
         
-        
+        print('Working on '+str(year)+': Storing the data in the defined location')
         #%%
         # =============================================================================
         # Saving the data
@@ -294,3 +297,5 @@ for year in years:
         
         # Closing files
         ds.close()
+        
+        print('Finished with '+str(year))
