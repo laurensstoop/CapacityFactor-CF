@@ -1,6 +1,6 @@
 # CapacityFactor-CF
 
-Version 0.1.0
+Version 0.2.0
 
 This Git contains a set of scripts intended to convert climate model parameters into capacity factors fit for use in Energy System Models. 
 
