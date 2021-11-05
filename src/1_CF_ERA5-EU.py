@@ -155,7 +155,7 @@ def wind_potential(wspd, height, alpha, cut_in_wspd, cut_out_start, cut_out_end,
     
     # Now we set the wind potential to 0 above the cut-out windspeed
     # ds_temp['windCF'] = ds_temp.windCF.where(wspd_height <= cut_out_start, maxCF*((cut_out_end)**3 - wspd_height**3) / ((cut_out_end)**3 -(cut_out_start)**3))
-    ds_temp['windCF'] = ds_temp.windCF.where(wspd_height <= cut_out_start, maxCF*(1+(cut_out_start-wspd_height)/(cut_out_end-cut_out_start)))
+    ds_temp['windCF'] = ds_temp.windCF.where(wspd_height <= cut_out_start, maxCF*((cut_out_end-wspd_height)/(cut_out_end-cut_out_start)))
     ds_temp['windCF'] = ds_temp.windCF.where(wspd_height <= cut_out_end, 0)
     
     return ds_temp.windCF
