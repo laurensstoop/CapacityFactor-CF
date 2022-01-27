@@ -230,26 +230,26 @@ ds["WON"] = wind_potential(dsi.wspd100m, height=100.0, alpha=0.143, cut_in_wspd=
 
 
 # plot the solarCF
-# plt.figure(1)
-# ds.sel(irradiance=1000.).SPV_jerez.plot()
+plt.figure(1)
+ds.sel(irradiance=1000.).SPV_jerez.plot()
 
-# plt.figure(2)
-# ds.SPV_bett.plot()
+plt.figure(2)
+ds.SPV_bett.plot()
 
-# plt.figure(3)
-# ds.sel(wspeed=0.).SPV_jerez.plot()
-
-
-# plt.figure(4)
-# ds.sel(wspeed=5.).SPV_jerez.plot()
+plt.figure(3)
+ds.sel(wspeed=0.).SPV_jerez.plot()
 
 
-# plt.figure(5)
-# ds.sel(wspeed=20.).SPV_jerez.plot()
+plt.figure(4)
+ds.sel(wspeed=5.).SPV_jerez.plot()
 
 
-# plt.figure(9)
-# ds.solar_diff_0.plot()
+plt.figure(5)
+ds.sel(wspeed=20.).SPV_jerez.plot()
+
+
+plt.figure(9)
+ds.solar_diff_0.plot()
 
 
 # Plot the windCF
